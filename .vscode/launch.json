@@ -6,9 +6,17 @@
     "configurations": [
         {
             "type": "java",
-            "name": "Process_Pixels",
+            "name": "Motion_Blur",
             "request": "launch",
-            "mainClass": "com.mycompany.imagej.Process_Pixels",
+            "mainClass": "com.mycompany.imagej.Motion_Blur",
+            "projectName": "Process_Pixels",
+            "preLaunchTask": "compile"
+        },
+        {
+            "type": "java",
+            "name": "Wiener_Filter",
+            "request": "launch",
+            "mainClass": "com.mycompany.imagej.Wiener_Filter",
             "projectName": "Process_Pixels",
             "preLaunchTask": "compile"
         }
