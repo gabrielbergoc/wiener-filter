@@ -31,6 +31,7 @@ public class Wiener_Filter implements PlugInFilter {
 
 	// plugin parameters
 	private boolean direction; // true: horizontal, false: vertical
+	private int filterSize;
 
 	@Override
 	public int setup(String arg, ImagePlus imp) {
@@ -57,12 +58,14 @@ public class Wiener_Filter implements PlugInFilter {
 		GenericDialog gd = new GenericDialog("Wiener Filter parameters");
 
 		gd.addChoice("Blur direction", new String[] { "Horizontal", "Vertical" }, "Horizontal");
+		gd.addNumericField("Filter size", 0, 0);
 
 		gd.showDialog();
 		if (gd.wasCanceled())
 			return false;
 
 		direction = gd.getNextChoice() == "Horizontal";
+		filterSize = (int)gd.getNextNumber();
 
 		return true;
 	}
@@ -70,7 +73,7 @@ public class Wiener_Filter implements PlugInFilter {
 	public ImageProcessor wienerFilter(ImageProcessor ip, float k) {
 		int nx = ip.getWidth();
 		int ny = ip.getHeight();
-		float[] kernel = makeKernelDFT(nx, ny);
+		float[] kernel = makeKernelDFT(nx, ny, filterSize);
 		float[] image = new float[2 * nx * ny]; // Array para conter a imagem no domínio da frequência
 		float[] pixels = (float[]) ip.convertToFloatProcessor().getPixels(); // Array com a imagem no domínio espacial
 		FloatFFT_2D fft = new FloatFFT_2D(ny, nx); // Transformador FFT
@@ -115,15 +118,15 @@ public class Wiener_Filter implements PlugInFilter {
 	}
 
 
-	private float[] makeKernelDFT(int width, int height) {
+	private float[] makeKernelDFT(int width, int height, int size) {
 		float[] kernel = new float[2 * width * height]; // Espaço para parte real e imaginária
 
 		// Popular parte real do kernel (parte imaginária é sempre zero)
 		for (int i = 0; i < width * height; i++) {
 			if (direction) {
-				kernel[2 * i] = i < 9 ? 1.0f / 9 : 0;
+				kernel[2 * i] = i < size ? 1.0f / size : 0;
 			} else {
-				kernel[2 * i] = i % width == 0 && i / width < 9 ? 1.0f / 9 : 0;
+				kernel[2 * i] = i % width == 0 && i / width < size ? 1.0f / size : 0;
 			}
 		}
 

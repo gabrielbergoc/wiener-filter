@@ -31,6 +31,7 @@ public class Motion_Blur implements PlugInFilter {
 	// plugin parameters
 	private boolean direction;	// true: horizontal, false: vertical
 	private String method;		// Convolution or Frequency multiplication
+	private int filterSize;
 
 	@Override
 	public int setup(String arg, ImagePlus imp) {
@@ -55,6 +56,7 @@ public class Motion_Blur implements PlugInFilter {
 
 		gd.addChoice("Blur direction", new String[] { "Horizontal", "Vertical" }, "Horizontal");
 		gd.addChoice("Method", new String[] { "Convolution", "Frequency multiplication" }, "Convolution");
+		gd.addNumericField("Filter size", 9, 0);
 
 		gd.showDialog();
 		if (gd.wasCanceled())
@@ -62,6 +64,7 @@ public class Motion_Blur implements PlugInFilter {
 
 		direction = gd.getNextChoice() == "Horizontal";
 		method = gd.getNextChoice();
+		filterSize = (int)gd.getNextNumber();
 
 		return true;
 	}
@@ -72,7 +75,7 @@ public class Motion_Blur implements PlugInFilter {
 				return motionBlurConvolution(ip);
 
 			case "Frequency multiplication":
-				return motionBlurDFT(ip);
+				return motionBlurDFT(ip, filterSize);
 
 			default:
 				throw new Error("Invalid method");
@@ -84,10 +87,10 @@ public class Motion_Blur implements PlugInFilter {
 		return ip;
 	}
 
-	public ImageProcessor motionBlurDFT(ImageProcessor ip) {
+	public ImageProcessor motionBlurDFT(ImageProcessor ip, int filterSize) {
 		int nx = ip.getWidth();
 		int ny = ip.getHeight();
-		float[] kernel = makeKernelDFT(nx, ny);
+		float[] kernel = makeKernelDFT(nx, ny, filterSize);
 		float[] image = new float[2 * nx * ny];									// Array para conter a imagem no domínio da frequência
 		float[] pixels = (float[]) ip.convertToFloatProcessor().getPixels();	// Array com a imagem no domínio espacial
 		FloatFFT_2D fft = new FloatFFT_2D(ny, nx);								// Transformador FFT
@@ -140,15 +143,15 @@ public class Motion_Blur implements PlugInFilter {
 		return kernel;
 	}
 
-	private float[] makeKernelDFT(int width, int height) {
+	private float[] makeKernelDFT(int width, int height, int size) {
 		float[] kernel = new float[2 * width * height]; // Espaço para parte real e imaginária
 
 		// Popular parte real do kernel (parte imaginária é sempre zero)
 		for (int i = 0; i < width * height; i++) {
 			if (direction) {
-				kernel[2 * i] = i < 9 ? 1.0f / 9 : 0;
+				kernel[2 * i] = i < size ? 1.0f / size : 0;
 			} else {
-				kernel[2 * i] = i % width == 0 && i / width < 9 ? 1.0f / 9 : 0;
+				kernel[2 * i] = i % width == 0 && i / width < size ? 1.0f / size : 0;
 			}
 		}
 
