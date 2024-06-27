@@ -31,7 +31,6 @@ public class Wiener_Filter implements PlugInFilter {
 
 	// plugin parameters
 	private boolean direction; // true: horizontal, false: vertical
-	private float k;
 
 	@Override
 	public int setup(String arg, ImagePlus imp) {
@@ -47,7 +46,10 @@ public class Wiener_Filter implements PlugInFilter {
 	@Override
 	public void run(ImageProcessor ip) {
 		if (showDialog()) {
-			new ImageAccess(process(ip)).show("Result");
+			new ImageAccess(wienerFilter(ip, 0)).show(String.format("Result (k = %.3f)", 0.0));
+			for (float k = 0.001f; k <= 1; k *= 10) {
+				new ImageAccess(wienerFilter(ip, k)).show(String.format("Result (k = %.3f)", k));
+			}
 		}
 	}
 
@@ -55,23 +57,17 @@ public class Wiener_Filter implements PlugInFilter {
 		GenericDialog gd = new GenericDialog("Wiener Filter parameters");
 
 		gd.addChoice("Blur direction", new String[] { "Horizontal", "Vertical" }, "Horizontal");
-		gd.addNumericField("K", 1);
 
 		gd.showDialog();
 		if (gd.wasCanceled())
 			return false;
 
 		direction = gd.getNextChoice() == "Horizontal";
-		k = (float)gd.getNextNumber();
 
 		return true;
 	}
 
-	public ImageProcessor process(ImageProcessor ip) {
-		return wienerFilter(ip);
-	}
-
-	public ImageProcessor wienerFilter(ImageProcessor ip) {
+	public ImageProcessor wienerFilter(ImageProcessor ip, float k) {
 		int nx = ip.getWidth();
 		int ny = ip.getHeight();
 		float[] kernel = makeKernelDFT(nx, ny);
